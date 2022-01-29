@@ -91,8 +91,8 @@ async function main() {
   // setup audio
   const synth = new Tone.Synth().toDestination();
 
-  let gains: Array<number> = Array(2);
-  let pitches: Array<number> = Array(2);
+  let gains: Array<number> = Array(2).fill(0);
+  let pitches: Array<number> = Array(2).fill(0);
 
   landmarksRealTime(video, detector, gains, pitches);
 }
