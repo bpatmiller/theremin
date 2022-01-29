@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,maximum-scale=1.0, user-scalable=no"
+  />
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <section id="loading-screen">
+    <div id="loader"></div>
+  </section>
+
+  <Flex
+    style="
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+    "
+  >
+    <div>
+      <video
+        id="video"
+        playsinline
+        style="width: 640; height: 500; z-index: -100; margin: auto"
+      ></video>
+    </div>
+    <script type="module" src="./index.module.js"></script>
+  </Flex>
+</body>
