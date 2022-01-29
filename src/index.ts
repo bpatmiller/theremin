@@ -84,9 +84,6 @@ async function main() {
   canvas = document.getElementById("canvas") as HTMLCanvasElement;
   canvas.height = video.videoHeight;
   canvas.width = video.videoWidth;
-  const canvasContainer = document.getElementById("canvas") as HTMLElement;
-  canvasContainer.height = video.videoHeight;
-  canvasContainer.width = video.videoWidth;
   ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
   // setup audio
   const synth = new Tone.Synth().toDestination();
