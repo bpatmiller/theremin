@@ -1,13 +1,13 @@
 import * as tf from "@tensorflow/tfjs-core";
 import "@tensorflow/tfjs-backend-webgl";
 import * as handPoseDetection from "@tensorflow-models/hand-pose-detection";
-import * as Tone from "tone";
 import { Hands } from "@mediapipe/hands";
-import { OmniOscillator } from "tone";
-import { PolySynth } from "tone";
-import { FMSynth } from "tone";
-import { Synth } from "tone";
-import { Frequency } from "tone";
+import { now, GrainPlayer, Signal, Gain, Panner, OmniOscillator } from "tone";
+import { clamp } from "@tensorflow/tfjs-core/dist/util";
+import { Buffer } from "tone";
+import { Distortion } from "tone";
+import { BitCrusher } from "tone";
+import { min } from "@tensorflow/tfjs-core";
 
 let rafID;
 const VIDEO_WIDTH = 640;
@@ -24,7 +24,7 @@ const pitchUpdate = (newVal: number, oldVal: number) => {
 };
 
 const readPitch = (val: number) => {
-  return ((100 * (VIDEO_WIDTH - val)) / VIDEO_WIDTH) ** 1.5;
+  return Math.max((10000 * (VIDEO_WIDTH - val)) / VIDEO_WIDTH, 0) ** 0.5;
 };
 
 async function setupCamera(): Promise<HTMLVideoElement> {
@@ -95,37 +95,40 @@ async function main() {
   canvas.width = video.videoWidth;
   ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
   // setup audio
-
-  let gains: Array<Tone.Gain> = Array(2);
-
-  // const synth1 = new Tone.AMSynth(Tone.Synth).toDestination();
-  // const synth2 = new Tone.FMSynth(Tone.Synth).toDestination();
-  // synth2.portamento = 1.0;
-  // const synths = [synth1, synth2];
-
-  // const now = Tone.now();
-  // synth1.triggerAttackRelease(440, 1, now);
-
-  // synth2.triggerAttackRelease(440 * 0.5, 1, now);
-
+  const gains = Array(2);
   const synths = Array(2);
   const signals = Array(2);
-  for (const s in [1, 2]) {
-    gains[s] = new Tone.Gain(0).toDestination();
-    synths[s] = new Tone.OmniOscillator().connect(gains[s]).start();
-    signals[s] = new Tone.Signal({ value: 440, units: "hertz" }).connect(
-      synths[s].frequency
-    );
+  const panners = Array(2);
+  let bc;
+  for (const s of [0, 1]) {
+    gains[s] = new Gain(0).toDestination();
+    panners[s] = new Panner(0).connect(gains[s]);
+    if (s === 1) {
+      synths[s] = new OmniOscillator().connect(panners[s]).start();
+      signals[s] = new Signal({ value: 440, units: "hertz" }).connect(
+        synths[s].frequency
+      );
+    } else {
+      const buffer = new Buffer("../grain.wav", () => {
+        console.log("buffer loaded");
+        synths[s] = new GrainPlayer(buffer);
+        synths[s].loop = true;
+        synths[s].loopEnd = 1;
+        synths[s].connect(panners[s]).start();
+        signals[s] = new Signal({ value: 440, units: "hertz" });
+      });
+    }
   }
-  landmarksRealTime(video, detector, gains, signals, synths);
+  landmarksRealTime(video, detector, gains, signals, panners, synths);
 }
 
 const landmarksRealTime = async (
   video: HTMLVideoElement,
   detector: handPoseDetection.HandDetector,
-  gains: Array<Tone.Gain>,
-  signals: Array<Tone.Signal>,
-  synths: Array<Synth>
+  gains: Array<Gain>,
+  signals: Array<Signal>,
+  panners: Array<Panner>,
+  synths: Array<any>
 ) => {
   async function frameLandmarks() {
     const predictions = await detector.estimateHands(video);
@@ -134,14 +137,30 @@ const landmarksRealTime = async (
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     // if hands detected
     if (predictions.length > 0) {
-      const now = Tone.now();
+      const timeNow = now();
       for (const handId in predictions) {
         const hid = parseInt(handId);
         const keypoints = predictions[hid].keypoints;
-        const newFreq = readPitch(keypoints[0].x);
-        signals[hid].rampTo(newFreq, 0.05);
-        gains[hid].gain.rampTo(readGain(keypoints[0].y), 0.1);
-        console.log(gains[hid].gain.value);
+        const x: number = keypoints[0].x;
+        const y: number = keypoints[0].y;
+        if (x && y) {
+          const newPan = clamp(
+            -1,
+            2.0 * ((VIDEO_WIDTH - keypoints[0].x) / VIDEO_WIDTH) - 1.0,
+            1
+          );
+          let newFreq = readPitch(x);
+          if (hid == 0) {
+            synths[hid].grainSize = clamp(0.05, (1.2 - newPan) * 0.3, 2.0);
+            synths[hid].detune = 120 * newPan;
+            synths[hid].playbackRate = clamp(0.5, 0.5 + 4 * (1.1 - newPan), 10);
+            gains[hid].gain.rampTo(readGain(keypoints[0].y) * 4, 0.1);
+          } else {
+            signals[hid].rampTo(newFreq, 0.05);
+            gains[hid].gain.rampTo(readGain(keypoints[0].y) * 0.1, 0.1);
+          }
+          panners[hid].pan.rampTo(newPan);
+        }
       }
 
       for (const handId in predictions) {
@@ -159,7 +178,7 @@ const landmarksRealTime = async (
       ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const g of gains) {
-        g.gain.rampTo(0, 0.25);
+        g?.gain.rampTo(0, 0.25);
       }
     }
     rafID = requestAnimationFrame(frameLandmarks);
