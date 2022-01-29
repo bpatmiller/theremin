@@ -3,7 +3,7 @@
   "homepage": "https://bpatmiller.github.io/theremin",
   "scripts": {
     "build": "snowpack build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build -t true"
   },
   "devDependencies": {
     "@snowpack/plugin-webpack": "^3.0.0",
