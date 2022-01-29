@@ -109,14 +109,17 @@ async function main() {
         synths[s].frequency
       );
     } else {
-      const buffer = new Buffer("../grain.wav", () => {
-        console.log("buffer loaded");
-        synths[s] = new GrainPlayer(buffer);
-        synths[s].loop = true;
-        synths[s].loopEnd = 1;
-        synths[s].connect(panners[s]).start();
-        signals[s] = new Signal({ value: 440, units: "hertz" });
-      });
+      const buffer = new Buffer(
+        "https://raw.githubusercontent.com/bpatmiller/theremin/master/grain.wav",
+        () => {
+          console.log("buffer loaded");
+          synths[s] = new GrainPlayer(buffer);
+          synths[s].loop = true;
+          synths[s].loopEnd = 1;
+          synths[s].connect(panners[s]).start();
+          signals[s] = new Signal({ value: 440, units: "hertz" });
+        }
+      );
     }
   }
   landmarksRealTime(video, detector, gains, signals, panners, synths);
