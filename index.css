@@ -12,8 +12,6 @@ h1 {
   color: hsl(180, 95%, 40%);
   font-size: 96px;
   font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
-  margin-top: 32px;
-  margin-bottom: 32px;
   background: url("liquid.bmp");
   background-size: 128px;
   filter: invert();
@@ -26,6 +24,7 @@ h1 {
   border-right: 96px ridge hsl(120, 60%, 25%);
   border-bottom: 96px ridge hsl(290, 25%, 53%);
   background-color: black;
+  transform: rotateY(180deg);
 }
 
 #loading-screen {
