@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@tensorflow-models/hand-pose-detection": "./@tensorflow-models/hand-pose-detection.js",
+    "@tensorflow/tfjs-backend-webgl": "./@tensorflow/tfjs-backend-webgl.js",
+    "@tensorflow/tfjs-core": "./@tensorflow/tfjs-core.js",
+    "@tensorflow/tfjs-core/dist/util": "./@tensorflow/tfjs-core/dist/util.js",
+    "tone": "./tone.js"
+  }
+}
