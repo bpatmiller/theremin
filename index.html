@@ -5,12 +5,13 @@
     name="viewport"
     content="width=device-width,initial-scale=1,maximum-scale=1.0, user-scalable=no"
   />
+  <title>theremin</title>
   <link rel="stylesheet" href="index.css" />
 </head>
 <body>
-  <section id="loading-screen">
-    <div id="loader"></div>
-  </section>
+  <!-- <section id="loading-screen">
+    <div id="loader">loading</div>
+  </section> -->
 
   <Flex
     style="
@@ -21,12 +22,27 @@
       height: 100vh;
     "
   >
-    <div>
-      <video
-        id="video"
-        playsinline
-        style="width: 640; height: 500; z-index: -100; margin: auto"
-      ></video>
+    <div
+      class="container"
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+      "
+    >
+      <div style="position: relative; width: 640px; height: 480px">
+        <video
+          id="video"
+          playsinline
+          style="position: absolute; z-index: 0; top: 0; left: 0"
+        ></video>
+        <canvas
+          id="canvas"
+          style="position: absolute; top: 0; left: 0"
+        ></canvas>
+      </div>
     </div>
     <script type="module" src="./index.module.js"></script>
   </Flex>

@@ -1,13 +1,27 @@
-let camera, scene, renderer;
 let model;
-let videoWidth, videoHeight, rafID, aspectX, aspectY;
-let stats;
-let AudioContext, audioCtx, osc;
+let detector;
+let rafID;
+let AudioContext, audioCtx, osc1, osc2, osc3;
 const VIDEO_WIDTH = 640;
 const VIDEO_HEIGHT = 500;
+let canvas, ctx;
+let colors;
 
-import * as tf from "@tensorflow/tfjs";
-import * as handpose from "@tensorflow-models/handpose";
+import * as tf from "@tensorflow/tfjs-core";
+import "@tensorflow/tfjs-backend-webgl";
+import * as handPoseDetection from "@tensorflow-models/hand-pose-detection";
+
+function generateHslaColors(saturation, lightness, alpha, amount) {
+  let colors = [];
+  let huedelta = Math.trunc(360 / amount);
+
+  for (let i = 0; i < amount; i++) {
+    let hue = i * huedelta;
+    colors.push(`hsla(${hue},${saturation}%,${lightness}%,${alpha})`);
+  }
+
+  return colors;
+}
 
 async function setupCamera() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -45,7 +59,13 @@ function onTransitionEnd(event) {
 async function main() {
   // setup handpose model
   await tf.setBackend("webgl");
-  model = await handpose.load();
+  model = handPoseDetection.SupportedModels.MediaPipeHands;
+  const detectorConfig = {
+    runtime: "tfjs", // or 'tfjs'
+    modelType: "lite",
+  };
+  detector = await handPoseDetection.createDetector(model, detectorConfig);
+
   let video;
   try {
     video = await loadVideo();
@@ -58,123 +78,86 @@ async function main() {
 
   video.width = video.videoWidth;
   video.height = video.videoHeight;
-  let showRenderer = false;
 
-  if (showRenderer) {
-    // setup three js
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      500
-    );
-
-    camera.position.z = 1;
-    camera.position.x = 0;
-    camera.position.y = 0;
-
-    const plane = new THREE.CircleBufferGeometry(2.0, 32);
-    const planeMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-    const planeMesh = new THREE.Mesh(plane, planeMat);
-    planeMesh.rotateOnAxis(new THREE.Vector3(1, 0, 0), 0.5);
-    planeMesh.position.z = 0;
-    planeMesh.position.y = -1;
-    // planeMesh.receiveShadow = true;
-
-    // scene.add(planeMesh);
-
-    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-    const material = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
-    var cubes = [];
-
-    const group = new THREE.Group();
-    for (let i = 0; i < 21; i++) {
-      const cube = new THREE.Mesh(geometry, material);
-      // cube.receiveShadow = true;
-      // cube.castShadow = true;
-      group.add(cube);
-      cubes.push(cube);
-    }
-
-    scene.add(group);
-
-    const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
-    scene.add(hemisphereLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xfffefe, 0.5);
-    directionalLight.position.set(-2.0, 4.0, 1.0);
-    directionalLight.castShadow = true;
-
-    directionalLight.shadow.mapSize.width = 512; // default
-    directionalLight.shadow.mapSize.height = 512; // default
-    directionalLight.shadow.camera.near = 0.5; // default
-    directionalLight.shadow.camera.far = 500; // default
-
-    scene.add(directionalLight);
-
-    renderer = new THREE.WebGLRenderer();
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    renderer.setSize(window.innerWidth / 2, window.innerHeight / 2);
-    renderer.domElement.style.width = 640 + "px";
-    renderer.domElement.style.height = 500 + "px";
-    document.body.appendChild(renderer.domElement);
-  }
+  // resize canvas
+  canvas = document.getElementById("canvas");
+  canvas.height = video.videoHeight;
+  canvas.width = video.videoWidth;
+  ctx = canvas.getContext("2d");
   // setup audio
   AudioContext = window.AudioContext || window.webkitAudioContext;
   audioCtx = new AudioContext();
 
-  osc = audioCtx.createOscillator();
-  osc.type = "sine";
-  osc.frequency.value = 1;
-  osc.connect(audioCtx.destination);
-  osc.start();
+  osc1 = audioCtx.createOscillator();
+  osc1.type = "sine";
+  osc1.frequency.value = 1;
+  osc1.connect(audioCtx.destination);
+  osc1.start();
 
-  const loadingScreen = document.getElementById("loading-screen");
-  loadingScreen.classList.add("fade-out");
-  loadingScreen.addEventListener("transitionend", onTransitionEnd);
+  osc2 = audioCtx.createOscillator();
+  osc2.type = "saw";
+  osc2.frequency.value = 2;
+  osc2.connect(audioCtx.destination);
+  osc2.start();
 
+  osc3 = audioCtx.createOscillator();
+  osc3.type = "square";
+  osc3.frequency.value = 4;
+  osc3.connect(audioCtx.destination);
+  osc3.start();
+
+  // const loadingScreen = document.getElementById("loading-screen");
+  // loadingScreen.classList.add("fade-out");
+  // loadingScreen.addEventListener("transitionend", onTransitionEnd);
+
+  colors = generateHslaColors(50, 100, 1.0, 4);
   // audioCtx.resume();
-  landmarksRealTime(video, cubes);
+  landmarksRealTime(video);
 }
 
-const landmarksRealTime = async (video, cubes) => {
+const landmarksRealTime = async (video) => {
   async function frameLandmarks() {
-    const predictions = await model.estimateHands(video);
+    const predictions = await detector.estimateHands(video);
     if (predictions.length > 0) {
-      const result = predictions[0].landmarks;
+      document.body.style.background = "#200000";
 
-      osc.frequency.linearRampToValueAtTime(
-        -result[0][0] + VIDEO_WIDTH,
+      const result = predictions[0].keypoints;
+      osc1.frequency.linearRampToValueAtTime(
+        -result[4].x + VIDEO_WIDTH,
+        audioCtx.currentTime + 0.08
+      );
+      osc2.frequency.linearRampToValueAtTime(
+        (-result[8].x + VIDEO_WIDTH) * 1.5,
+        audioCtx.currentTime + 0.08
+      );
+      osc3.frequency.linearRampToValueAtTime(
+        (-result[20].x + VIDEO_WIDTH) * 2,
         audioCtx.currentTime + 0.08
       );
 
-      // compute pinky-index rotation
-      // indices 17, 5
-      // pinky-index vector = pi
-      // just get norm(pi).x
-
-      // let pix = result[17][0] - result[5][0];
-      // let piz = result[17][2] - result[5][2];
-      // let yrot = pix / Math.sqrt(pix ** 2 + piz ** 2);
-
-      // update 3d hand model
-      if (false) {
-        for (let i = 0; i < 21; i++) {
-          cubes[i].position.x =
-            (-result[i][0] + VIDEO_WIDTH * 0.5) / VIDEO_WIDTH;
-          cubes[i].position.y =
-            (-result[i][1] + VIDEO_HEIGHT * 0.5) / VIDEO_HEIGHT;
-          cubes[i].position.z = result[i][2] * 0.005;
+      // draw stuff
+      ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let col = 0;
+      for (const handId in predictions) {
+        for (const i of Array(20).keys()) {
+          ctx.strokeStyle = ["red", "white"][col++ % 3];
+          ctx.beginPath();
+          const el = predictions[handId].keypoints[i];
+          const nextEl = predictions[handId].keypoints[i + 1];
+          ctx.moveTo(el.x, el.y);
+          ctx.lineTo(nextEl.x, nextEl.y);
+          ctx.stroke();
         }
       }
     } else {
-      osc.frequency.linearRampToValueAtTime(0, audioCtx.currentTime + 4.0);
+      ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      document.body.style.background = "black";
+      osc1.frequency.linearRampToValueAtTime(0, audioCtx.currentTime + 5.0);
+      osc2.frequency.linearRampToValueAtTime(0, audioCtx.currentTime + 5.0);
+      osc3.frequency.linearRampToValueAtTime(0, audioCtx.currentTime + 6.0);
     }
-
-    // renderer.render(scene, camera);
     rafID = requestAnimationFrame(frameLandmarks);
   }
   frameLandmarks();
