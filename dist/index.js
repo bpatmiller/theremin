@@ -119,7 +119,7 @@ function main() {
                 signals[s] = new tone_1.Signal({ value: 440, units: "hertz" }).connect(synths[s].frequency);
             }
             else {
-                const buffer = new tone_2.Buffer("../grain.wav", () => {
+                const buffer = new tone_2.Buffer("https://raw.githubusercontent.com/bpatmiller/theremin/master/grain.wav", () => {
                     console.log("buffer loaded");
                     synths[s] = new tone_1.GrainPlayer(buffer);
                     synths[s].loop = true;

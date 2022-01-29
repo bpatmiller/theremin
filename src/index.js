@@ -78,7 +78,7 @@ async function main() {
       synths[s] = new OmniOscillator().connect(panners[s]).start();
       signals[s] = new Signal({value: 440, units: "hertz"}).connect(synths[s].frequency);
     } else {
-      const buffer = new Buffer("../grain.wav", () => {
+      const buffer = new Buffer("https://raw.githubusercontent.com/bpatmiller/theremin/master/grain.wav", () => {
         console.log("buffer loaded");
         synths[s] = new GrainPlayer(buffer);
         synths[s].loop = true;
