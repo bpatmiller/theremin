@@ -4,7 +4,7 @@
   "scripts": {
     "watch": "tsc -w",
     "build": "snowpack build",
-    "deploy": "gh-pages -d build -t true"
+    "deploy": "gh-pages -d build"
   },
   "devDependencies": {
     "@snowpack/plugin-webpack": "^3.0.0",
