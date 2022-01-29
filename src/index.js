@@ -1,3 +1,7 @@
+import * as tf from "@tensorflow/tfjs-core";
+import "@tensorflow/tfjs-backend-webgl";
+import * as handPoseDetection from "@tensorflow-models/hand-pose-detection";
+
 let model;
 let detector;
 let rafID;
@@ -6,10 +10,6 @@ const VIDEO_WIDTH = 640;
 const VIDEO_HEIGHT = 500;
 let canvas, ctx;
 let colors;
-
-import * as tf from "@tensorflow/tfjs-core";
-import "@tensorflow/tfjs-backend-webgl";
-import * as handPoseDetection from "@tensorflow-models/hand-pose-detection";
 
 function generateHslaColors(saturation, lightness, alpha, amount) {
   let colors = [];

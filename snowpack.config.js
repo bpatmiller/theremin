@@ -6,9 +6,7 @@ module.exports = {
   mount: {
     /* ... */
   },
-  plugins: [
-    /* ... */
-  ],
+  plugins: [["@snowpack/plugin-webpack"]],
   packageOptions: {
     /* ... */
   },
@@ -16,6 +14,6 @@ module.exports = {
     /* ... */
   },
   buildOptions: {
-    /* ... */
+    baseUrl: "/theremin/",
   },
 };
