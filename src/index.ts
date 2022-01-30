@@ -139,7 +139,10 @@ const landmarksRealTime = async (
     ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     // if hands detected
+
     if (predictions.length > 0) {
+      let isRight = false;
+      let isLeft = false;
       const timeNow = now();
       for (const handId in predictions) {
         const hid = parseInt(handId);
@@ -153,22 +156,30 @@ const landmarksRealTime = async (
             1
           );
           let newFreq = readPitch(x);
-          if (hid == 0) {
-            synths[hid].grainSize = clamp(0.05, (1.2 - newPan) * 0.3, 2.0);
-            synths[hid].detune = 120 * newPan;
-            synths[hid].playbackRate = clamp(0.5, 0.5 + 4 * (1.1 - newPan), 10);
-            gains[hid].gain.rampTo(readGain(keypoints[0].y) * 4, 0.1);
+          if (predictions[hid].handedness == "Left") {
+            synths[0].grainSize = clamp(0.05, (1.2 - newPan) * 0.3, 2.0);
+            synths[0].detune = 120 * newPan;
+            synths[0].playbackRate = clamp(0.5, 0.5 + 4 * (1.1 - newPan), 10);
+            gains[0].gain.rampTo(readGain(keypoints[0].y) * 4, 0.1);
+            isRight = true;
           } else {
-            signals[hid].rampTo(newFreq, 0.05);
-            gains[hid].gain.rampTo(readGain(keypoints[0].y) * 0.1, 0.1);
+            signals[1].rampTo(newFreq, 0.05);
+            gains[1].gain.rampTo(readGain(keypoints[0].y) * 0.1, 0.1);
+            isLeft = true;
           }
           panners[hid].pan.rampTo(newPan);
         }
       }
-
+      if (!isLeft) {
+        gains[1].gain.rampTo(0, 0.25);
+      }
+      if (!isRight) {
+        gains[0].gain.rampTo(0, 0.25);
+      }
       for (const handId in predictions) {
         for (const i of Array(20).keys()) {
-          ctx.strokeStyle = colors[parseInt(handId) % 2];
+          ctx.strokeStyle =
+            predictions[handId].handedness == "Left" ? "red" : "blue";
           ctx.beginPath();
           const el = predictions[handId].keypoints[i];
           const nextEl = predictions[handId].keypoints[i + 1];
