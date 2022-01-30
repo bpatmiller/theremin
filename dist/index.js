@@ -141,6 +141,8 @@ const landmarksRealTime = (video, detector, gains, signals, panners, synths) => 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             // if hands detected
             if (predictions.length > 0) {
+                let isRight = false;
+                let isLeft = false;
                 const timeNow = (0, tone_1.now)();
                 for (const handId in predictions) {
                     const hid = parseInt(handId);
@@ -150,22 +152,31 @@ const landmarksRealTime = (video, detector, gains, signals, panners, synths) => 
                     if (x && y) {
                         const newPan = (0, util_1.clamp)(-1, 2.0 * ((VIDEO_WIDTH - keypoints[0].x) / VIDEO_WIDTH) - 1.0, 1);
                         let newFreq = readPitch(x);
-                        if (hid == 0) {
-                            synths[hid].grainSize = (0, util_1.clamp)(0.05, (1.2 - newPan) * 0.3, 2.0);
-                            synths[hid].detune = 120 * newPan;
-                            synths[hid].playbackRate = (0, util_1.clamp)(0.5, 0.5 + 4 * (1.1 - newPan), 10);
-                            gains[hid].gain.rampTo(readGain(keypoints[0].y) * 4, 0.1);
+                        if (predictions[hid].handedness == "Left") {
+                            synths[0].grainSize = (0, util_1.clamp)(0.05, (1.2 - newPan) * 0.3, 2.0);
+                            synths[0].detune = 120 * newPan;
+                            synths[0].playbackRate = (0, util_1.clamp)(0.5, 0.5 + 4 * (1.1 - newPan), 10);
+                            gains[0].gain.rampTo(readGain(keypoints[0].y) * 4, 0.1);
+                            isRight = true;
                         }
                         else {
-                            signals[hid].rampTo(newFreq, 0.05);
-                            gains[hid].gain.rampTo(readGain(keypoints[0].y) * 0.1, 0.1);
+                            signals[1].rampTo(newFreq, 0.05);
+                            gains[1].gain.rampTo(readGain(keypoints[0].y) * 0.1, 0.1);
+                            isLeft = true;
                         }
                         panners[hid].pan.rampTo(newPan);
                     }
                 }
+                if (!isLeft) {
+                    gains[1].gain.rampTo(0, 0.25);
+                }
+                if (!isRight) {
+                    gains[0].gain.rampTo(0, 0.25);
+                }
                 for (const handId in predictions) {
                     for (const i of Array(20).keys()) {
-                        ctx.strokeStyle = colors[parseInt(handId) % 2];
+                        ctx.strokeStyle =
+                            predictions[handId].handedness == "Left" ? "red" : "blue";
                         ctx.beginPath();
                         const el = predictions[handId].keypoints[i];
                         const nextEl = predictions[handId].keypoints[i + 1];
