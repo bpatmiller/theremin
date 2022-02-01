@@ -6,7 +6,7 @@ import { now, GrainPlayer, Signal, Gain, Panner, OmniOscillator } from "tone";
 import { clamp } from "@tensorflow/tfjs-core/dist/util";
 import { Buffer } from "tone";
 import { Distortion } from "tone";
-import { BitCrusher } from "tone";
+import { BitCrusher, context } from "tone";
 import { min } from "@tensorflow/tfjs-core";
 
 let rafID;
@@ -134,6 +134,13 @@ const landmarksRealTime = async (
   synths: Array<any>
 ) => {
   async function frameLandmarks() {
+    // if (context.state !== "running") {
+    //   document
+    //     .getElementById("audioCtxSusp")
+    //     ?.setAttribute("display", "inline");
+    // } else {
+    //   document.getElementById("audioCtxSusp")?.setAttribute("display", "none");
+    // }
     const predictions = await detector.estimateHands(video);
     // clear canvas
     ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -147,8 +154,8 @@ const landmarksRealTime = async (
       for (const handId in predictions) {
         const hid = parseInt(handId);
         const keypoints = predictions[hid].keypoints;
-        const x: number = keypoints[0].x;
-        const y: number = keypoints[0].y;
+        const x: number = keypoints[16].x;
+        const y: number = keypoints[16].y;
         if (x && y) {
           const newPan = clamp(
             -1,
@@ -157,9 +164,9 @@ const landmarksRealTime = async (
           );
           let newFreq = readPitch(x);
           if (predictions[hid].handedness == "Left") {
-            synths[0].grainSize = clamp(0.05, (1.2 - newPan) * 0.3, 2.0);
-            synths[0].detune = 120 * newPan;
-            synths[0].playbackRate = clamp(0.5, 0.5 + 4 * (1.1 - newPan), 10);
+            synths[0].grainSize = clamp(0.01, (1.2 - newPan) * 0.1, 2.0);
+            synths[0].detune = 12 * 1 * newPan;
+            synths[0].playbackRate = clamp(0.5, 0.5 + 8 * (1.1 - newPan), 40);
             gains[0].gain.rampTo(readGain(keypoints[0].y) * 4, 0.1);
             isRight = true;
           } else {
@@ -179,7 +186,10 @@ const landmarksRealTime = async (
       for (const handId in predictions) {
         for (const i of Array(20).keys()) {
           ctx.strokeStyle =
-            predictions[handId].handedness == "Left" ? "red" : "blue";
+            predictions[handId].handedness == "Left"
+              ? "hsl(16, 40%, 90%)"
+              : "hsl(120, 60%, 95%)";
+          ctx.lineWidth = 10;
           ctx.beginPath();
           const el = predictions[handId].keypoints[i];
           const nextEl = predictions[handId].keypoints[i + 1];
