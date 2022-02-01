@@ -4,106 +4,51 @@ body {
   margin: 0;
   width: 100%;
   height: 100%;
-  background: url("liquid.bmp");
-  background-size: 128px;
+  /* background: url("liquid.bmp"); */
+  background: linear-gradient(0deg, black, transparent),
+    url(https://grainy-gradients.vercel.app/noise.svg);
+  backdrop-filter: contrast(170%) brightness(1000%);
+  background-size: "auto";
 }
 
-h1 {
-  color: hsl(180, 95%, 40%);
-  font-size: 96px;
-  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
-  background: url("liquid.bmp");
-  background-size: 128px;
-  filter: invert();
-  text-decoration: underline;
+#video {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  filter: saturate(0%) contrast(500%);
 }
 
-#canvas-container {
-  border-top: 96px ridge hsl(0, 30%, 70%);
-  border-left: 96px ridge hsl(16, 40%, 50%);
-  border-right: 96px ridge hsl(120, 60%, 25%);
-  border-bottom: 96px ridge hsl(290, 25%, 53%);
-  background-color: black;
-  transform: rotateY(180deg);
+.noise {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
-#loading-screen {
+#canvas {
   position: absolute;
   z-index: 2;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(1, 1, 1, 0);
-  opacity: 1;
-  transition: 1s opacity;
+  filter: drop-shadow(-0.033em 0 1px rgba(255, 0, 0, 0.67))
+    drop-shadow(0.033em 0 1px rgba(0, 0, 255, 0.67));
 }
 
-#loading-screen.fade-out {
-  opacity: 0;
+#canvas-container {
+  transform: rotateY(180deg);
 }
 
-#loader {
-  display: block;
-  position: relative;
-  left: 50%;
-  top: 50%;
-  width: 450px;
-  height: 450px;
-  margin: -225px 0 0 -225px;
-  border-radius: 50%;
-  border: 17px solid transparent;
-  border-top-color: #9370db;
-  -webkit-animation: spin 2s linear infinite;
-  animation: spin 2s linear infinite;
-}
-#loader:before {
-  content: "";
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  right: 5px;
-  bottom: 5px;
-  border-radius: 50%;
-  border: 11px solid transparent;
-  border-top-color: #ba55d3;
-  -webkit-animation: spin 3s linear infinite;
-  animation: spin 3s linear infinite;
-}
-#loader:after {
-  content: "";
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  right: 15px;
-  bottom: 15px;
-  border-radius: 50%;
-  border: 15px solid transparent;
-  border-top-color: #ff00ff;
-  -webkit-animation: spin 1.5s linear infinite;
-  animation: spin 1.5s linear infinite;
-}
-@-webkit-keyframes spin {
-  0% {
-    -webkit-transform: rotate(0deg);
-    -ms-transform: rotate(0deg);
-    transform: rotate(0deg);
-  }
-  100% {
-    -webkit-transform: rotate(360deg);
-    -ms-transform: rotate(360deg);
-    transform: rotate(360deg);
-  }
-}
-@keyframes spin {
-  0% {
-    -webkit-transform: rotate(0deg);
-    -ms-transform: rotate(0deg);
-    transform: rotate(0deg);
-  }
-  100% {
-    -webkit-transform: rotate(360deg);
-    -ms-transform: rotate(360deg);
-    transform: rotate(360deg);
-  }
+#loading {
+  color: black;
+  filter: drop-shadow(-0.033em 0 1px rgba(255, 0, 0, 0.67))
+    drop-shadow(0.033em 0 1px rgba(0, 0, 255, 0.67));
+  opacity: 0.75;
+  mix-blend-mode: screen;
+  transform: rotateY(180deg);
+  margin: auto;
+  text-align: center;
+  width: 100%;
+  font-size: 96px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-style: italic;
 }

@@ -10,13 +10,13 @@ import { BitCrusher, context } from "tone";
 import { min } from "@tensorflow/tfjs-core";
 
 let rafID;
-const VIDEO_WIDTH = 640;
-const VIDEO_HEIGHT = 500;
+let VIDEO_WIDTH = 640;
+let VIDEO_HEIGHT = 500;
 let canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D;
 let colors = ["red", "white"];
 
 const readGain = (y: number) => {
-  return (500.0 - y) / 500.0;
+  return (VIDEO_HEIGHT - y) / VIDEO_HEIGHT;
 };
 
 const pitchUpdate = (newVal: number, oldVal: number) => {
@@ -88,11 +88,14 @@ async function main() {
 
   video.width = video.videoWidth;
   video.height = video.videoHeight;
+  VIDEO_HEIGHT = video.width;
+  VIDEO_WIDTH = video.height;
 
   // resize canvas
+  document.getElementById("loading")?.style.setProperty("display", "none");
   canvas = document.getElementById("canvas") as HTMLCanvasElement;
-  canvas.height = video.videoHeight;
-  canvas.width = video.videoWidth;
+  canvas.height = VIDEO_HEIGHT;
+  canvas.width = VIDEO_WIDTH;
   ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
   // setup audio
   const gains = Array(2);
@@ -151,15 +154,16 @@ const landmarksRealTime = async (
       let isRight = false;
       let isLeft = false;
       const timeNow = now();
+      const kp = 16;
       for (const handId in predictions) {
         const hid = parseInt(handId);
         const keypoints = predictions[hid].keypoints;
-        const x: number = keypoints[16].x;
-        const y: number = keypoints[16].y;
+        const x: number = keypoints[kp].x;
+        const y: number = keypoints[kp].y;
         if (x && y) {
           const newPan = clamp(
             -1,
-            2.0 * ((VIDEO_WIDTH - keypoints[0].x) / VIDEO_WIDTH) - 1.0,
+            2.0 * ((VIDEO_WIDTH - x) / VIDEO_WIDTH) - 1.0,
             1
           );
           let newFreq = readPitch(x);
@@ -167,11 +171,11 @@ const landmarksRealTime = async (
             synths[0].grainSize = clamp(0.01, (1.2 - newPan) * 0.1, 2.0);
             synths[0].detune = 12 * 1 * newPan;
             synths[0].playbackRate = clamp(0.5, 0.5 + 8 * (1.1 - newPan), 40);
-            gains[0].gain.rampTo(readGain(keypoints[0].y) * 4, 0.1);
+            gains[0].gain.rampTo(readGain(y) * 4, 0.1);
             isRight = true;
           } else {
             signals[1].rampTo(newFreq, 0.05);
-            gains[1].gain.rampTo(readGain(keypoints[0].y) * 0.1, 0.1);
+            gains[1].gain.rampTo(readGain(y) * 0.1, 0.1);
             isLeft = true;
           }
           panners[hid].pan.rampTo(newPan);
@@ -184,22 +188,25 @@ const landmarksRealTime = async (
         gains[0].gain.rampTo(0, 0.25);
       }
       for (const handId in predictions) {
-        for (const i of Array(20).keys()) {
-          ctx.strokeStyle =
-            predictions[handId].handedness == "Left"
-              ? "hsl(16, 40%, 90%)"
-              : "hsl(120, 60%, 95%)";
-          ctx.lineWidth = 10;
-          ctx.beginPath();
+        ctx.beginPath();
+        ctx.strokeStyle =
+          predictions[handId].handedness == "Left"
+            ? "hsl(16, 40%, 10%)"
+            : "hsl(160, 60%, 5%)";
+        ctx.lineWidth = 6;
+        ctx.lineJoin = "round";
+        for (const i of Array(21).keys()) {
           const el = predictions[handId].keypoints[i];
-          const nextEl = predictions[handId].keypoints[i + 1];
-          ctx.moveTo(el.x, el.y);
-          ctx.lineTo(nextEl.x, nextEl.y);
-          ctx.stroke();
+          if (i == 0) {
+            ctx.moveTo(el.x, el.y);
+          } else {
+            ctx.lineTo(el.x, el.y);
+          }
         }
+        ctx.stroke();
       }
     } else {
-      ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+      // ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const g of gains) {
         g?.gain.rampTo(0, 0.25);
